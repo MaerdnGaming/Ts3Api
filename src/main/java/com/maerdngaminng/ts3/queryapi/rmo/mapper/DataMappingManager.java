@@ -13,6 +13,7 @@ import com.maerdngaminng.ts3.queryapi.Ts3ApiException;
 import com.maerdngaminng.ts3.queryapi.Ts3ApiRMObjectParameter;
 import com.maerdngaminng.ts3.queryapi.Ts3QueryApi;
 import com.maerdngaminng.ts3.queryapi.rmo.ClientType;
+import com.maerdngaminng.ts3.queryapi.rmo.Codec;
 import com.maerdngaminng.ts3.queryapi.rmo.CommaSeperatedIntegerList;
 import com.maerdngaminng.ts3.queryapi.rmo.RMObject;
 import com.maerdngaminng.ts3.queryapi.rmo.VirtualServerState;
@@ -36,6 +37,7 @@ public final class DataMappingManager {
 		dataMappers.put(VirtualServerState.class, new VirtualServerStateDataMapper());
 		dataMappers.put(CommaSeperatedIntegerList.class, new CommaSeperatedIntegerListDataMapper());
 		dataMappers.put(ClientType.class, new ClientTypeDataMapper());
+		dataMappers.put(Codec.class, new CodecDataMapper());
 	}
 
 	public static <Y> Y mapData(Class<Y> type, String data, Ts3QueryApi api) throws Ts3ApiException {

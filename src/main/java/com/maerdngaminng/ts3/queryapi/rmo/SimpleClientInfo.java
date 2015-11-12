@@ -19,10 +19,10 @@ public class SimpleClientInfo implements RMObject {
 	private Ts3QueryApi ts3QueryApi;
 	
 	@Ts3ApiRMObjectParameter("clid")
-	private int clid;
+	private int clientId;
 	
 	@Ts3ApiRMObjectParameter("cid")
-	private int clientId;
+	private int channelId;
 	
 	@Ts3ApiRMObjectParameter("client_database_id")
 	private int clientDatabaseId;

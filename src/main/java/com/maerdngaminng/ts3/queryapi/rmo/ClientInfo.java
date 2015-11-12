@@ -18,8 +18,10 @@ public class ClientInfo implements RMObject {
 	@Setter
 	private Ts3QueryApi ts3QueryApi;
 	
+	private int clientId = -1;
+	
 	@Ts3ApiRMObjectParameter("cid")
-	private int clientId;
+	private int channelId;
 
 	@Ts3ApiRMObjectParameter("client_database_id")
 	private int clientDatabaseId;
@@ -197,4 +199,9 @@ public class ClientInfo implements RMObject {
 		throw new NotEditableObjectException();
 	}
 
+	public void setClientId(int clientId) {
+		if(this.clientId != -1)
+			throw new IllegalArgumentException("can't update singleton clientId");
+		this.clientId = clientId;
+	}
 }

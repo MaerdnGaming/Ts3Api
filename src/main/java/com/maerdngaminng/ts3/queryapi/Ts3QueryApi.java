@@ -2,12 +2,14 @@ package com.maerdngaminng.ts3.queryapi;
 
 import java.util.List;
 
-import com.maerdngaminng.ts3.queryapi.filter.ClientQueryFilter;
+import com.maerdngaminng.ts3.queryapi.filter.ClientInfoFilter;
+import com.maerdngaminng.ts3.queryapi.rmo.ChannelInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.ClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.SimpleClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.HostinfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.InstanceInfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.RMObject;
+import com.maerdngaminng.ts3.queryapi.rmo.ServerGroupClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.ServerVersionInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.VirtualServerSnapshot;
 
@@ -123,15 +125,15 @@ public interface Ts3QueryApi extends AutoCloseable {
 	 * @return a filtered {@link List} of {@link ClientInfo}s
 	 * @throws Ts3ApiException thrown if an exception occurs
 	 */
-	public List<ClientInfo> getOnlineClientsExtended(ClientQueryFilter filter) throws Ts3ApiException;
+	public List<ClientInfo> getOnlineClientsExtended(ClientInfoFilter filter) throws Ts3ApiException;
 	
 	/**
-	 * Gets a {@link ClientInfo} representing the client with the given clid
+	 * Gets a {@link ClientInfo} representing the client with the given clientId
 	 * 
-	 * @return the {@link ClientInfo} for the clid
+	 * @return the {@link ClientInfo} for the clientId
 	 * @throws Ts3ApiException thrown if an exception occurs
 	 */
-	public ClientInfo getClientInfo(int clid) throws Ts3ApiException;
+	public ClientInfo getClientInfo(int clientId) throws Ts3ApiException;
 	
 	/**
 	 * Writes the changes of an {@link RMObject}-Object to the ts3 server
@@ -141,4 +143,67 @@ public interface Ts3QueryApi extends AutoCloseable {
 	 * @throws Ts3ApiException thrown if an exception occurs
 	 */
 	public void saveChanges(RMObject newObj, String command) throws Ts3ApiException;
+	
+	/**
+	 * Lists all clients in the given channel as {@link SimpleClientInfo}
+	 * 
+	 * @param channelId the id of the channel to search
+	 * @return a list of {@link SimpleClientInfo}
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public List<SimpleClientInfo> getSimpleClientsInChannel(int channelId) throws Ts3ApiException;
+	
+	/**
+	 * Lists all clients in the given channel as {@link ClientInfo}
+	 * 
+	 * @param channelId the id of the channel to search
+	 * @return a list of {@link ClientInfo}
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public List<ClientInfo> getClientsInChannel(int channelId) throws Ts3ApiException;
+	
+	/**
+	 * Lists all clients in the given channel as {@link ClientInfo} filtered by the given filter
+	 * 
+	 * @param channelId the id of the channel to search
+	 * @param filter the filter to filter the clients
+	 * @return a list of {@link ClientInfo}
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public List<ClientInfo> getClientsInChannel(int channelId, ClientInfoFilter filter) throws Ts3ApiException;
+	
+	/**
+	 * Gets a {@link ChannelInfo} representing the channel with the given channelId
+	 * 
+	 * @return the {@link ChannelInfo} for the channelId
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public ChannelInfo getChannelInfo(int channelId) throws Ts3ApiException;
+	
+	/**
+	 * Removes a server group from a client
+	 * 
+	 * @param clientDatabaseId the database id of the client to remove the group
+	 * @param serverGroupId the id of the ts3 server group to remove
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public void removeClientFromGroup(int clientDatabaseId, int serverGroupId) throws Ts3ApiException;
+	
+	/**
+	 * Adds a server group to a client
+	 * 
+	 * @param clientDatabaseId the database id of the client to add the group
+	 * @param serverGroupId the id of the ts3 server group to add
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public void addClientFromGroup(int clientDatabaseId, int serverGroupId) throws Ts3ApiException;
+	
+	/**
+	 * Lists basic informations of the server groups for the given client as {@link ServerGroupClientInfo}
+	 * 
+	 * @param clientDatabaseId the database id of the client
+	 * @return a list of {@link ServerGroupClientInfo}
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public List<ServerGroupClientInfo> getClientServerGroups(int clientDatabaseId) throws Ts3ApiException;
 }

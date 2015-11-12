@@ -9,45 +9,74 @@ import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
-import com.maerdngaminng.ts3.queryapi.filter.ClientQueryFilter;
+import com.maerdngaminng.ts3.queryapi.filter.ClientInfoFilter;
+import com.maerdngaminng.ts3.queryapi.rmo.ChannelInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.ClientInfo;
-import com.maerdngaminng.ts3.queryapi.rmo.SimpleClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.HostinfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.InstanceInfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.RMObject;
+import com.maerdngaminng.ts3.queryapi.rmo.ServerGroupClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.ServerVersionInfo;
+import com.maerdngaminng.ts3.queryapi.rmo.SimpleClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.VirtualServerSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.mapper.DataMappingManager;
 
 @Data
-@RequiredArgsConstructor(access=AccessLevel.PACKAGE)
 public class Ts3QueryApiImpl implements Ts3QueryApi {
 
 	private final Ts3ConnectionInfo ts3ConnectionInfo;
 	private Socket socket = null;
 	private Scanner scanner = null;
+	private Thread messageReaderThread;
+	private AtomicBoolean stop = new AtomicBoolean(false);
 	private PrintStream printStream = null;
+	private BlockingQueue<QueryMessage> resultMessageQueue = new LinkedBlockingQueue<>();
 
+	protected Ts3QueryApiImpl(Ts3ConnectionInfo ts3ConnectionInfo) {
+		this.ts3ConnectionInfo = ts3ConnectionInfo;
+	}
+	
 	private boolean isAllAvalible() {
 		return this.socket != null && this.socket.isConnected() && !this.socket.isClosed() && this.scanner != null && this.printStream != null;
 	}
-
-	private boolean initConnection() throws Ts3ApiConnectException {
-		String line1;
-		if (this.scanner.hasNextLine()) {
-			line1 = this.scanner.nextLine();
-			if (!line1.equals("TS3"))
-				throw new Ts3ApiConnectException("Faild to connect to ts3 server: invalid server promt (no ts3 server)");
-			this.scanner.hasNextLine();
-			this.scanner.nextLine();
-			return true;
+	
+	private void messageReader() {
+		try {
+			String result = "";
+			List<String> dataLines = new LinkedList<>();
+			while (!this.stop.get() && this.scanner.hasNextLine()) {
+				result = this.scanner.nextLine();
+				if(result.trim().equals("")) {
+					continue;
+				}
+				boolean data = false;
+				if (result.startsWith("error")) {
+					QueryMessage msg = new QueryMessage(result, dataLines);
+					this.resultMessageQueue.put(msg);
+				} else if (result.startsWith("TS3")) {
+					//Handle ready
+				} else if (result.startsWith("Welcome")) {
+					//Handle greething
+				} else if (result.startsWith("notify")) {
+					//Handle notify
+				} else if (result.startsWith("selected")) {
+					//Handle selected
+				} else {
+					data = true;
+					dataLines.add(result);
+				}
+				if(!data)
+					dataLines = new LinkedList<>();
+			}
+		}catch(Throwable t) {
+			t.printStackTrace();
 		}
-		return false;
 	}
 
 	private QueryCommandResult sendCommandAndCheckResultWithData(String command) throws Ts3ApiException {
@@ -63,18 +92,14 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 		if (!this.isAllAvalible())
 			throw new Ts3ApiException("Connection is not available");
 		this.printStream.println(command);
-		List<String> resultLines = new LinkedList<>();
 		String result;
 		int id = 0;
 		String msg = null;
 		int failed_permid = 0;
-		while (this.scanner.hasNextLine()) {
-			result = this.scanner.nextLine();
-			if (!result.startsWith("error id=")) {
-				resultLines.add(result);
-				continue;
-			}
-			result = result.substring(6);
+		
+		try {
+			QueryMessage qmsg = this.resultMessageQueue.take();
+			result = qmsg.getMainMessage().substring(6);
 			String[] c = result.split(" ");
 			for (String x : c) {
 				if (x.startsWith("id")) {
@@ -88,9 +113,10 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 					failed_permid = new Integer(d[1]);
 				}
 			}
-			break;
+			return new QueryCommandResult(id, msg, failed_permid, qmsg.getDataMessages());
+		} catch (InterruptedException e) {
+			throw new Ts3ApiException(e);
 		}
-		return new QueryCommandResult(id, msg, failed_permid, resultLines);
 	}
 
 	private boolean login() throws Ts3ApiException {
@@ -103,6 +129,8 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 		this.socket = new Socket(this.getTs3ConnectionInfo().getHostname(), this.getTs3ConnectionInfo().getPort());
 		this.scanner = new Scanner(this.socket.getInputStream());
 		this.printStream = new PrintStream(this.socket.getOutputStream());
+		messageReaderThread = new Thread(this::messageReader, "Ts3ApiMessageReaderThread");
+		messageReaderThread.start();
 	}
 
 	protected String buildCommandString(RMObject newObj, String command) throws Ts3ApiException {
@@ -130,14 +158,12 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 	}
 
 	@Override
-	public void connect() throws Ts3ApiException {
+	public synchronized void connect() throws Ts3ApiException {
 		try {
 			this.openConnection();
 		} catch (IOException e) {
 			throw new Ts3ApiConnectException("Failed to connect to ts3 server", e);
 		}
-		if (!this.initConnection())
-			throw new Ts3ApiConnectException("Faild to connect to ts3 server");
 		if (this.getTs3ConnectionInfo().getUsername() != null && this.getTs3ConnectionInfo().getPassword() != null) {
 			try {
 				if (!this.login()) {
@@ -153,11 +179,13 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 	}
 
 	@Override
-	public void disconnect() {
+	public synchronized void disconnect() {
 		try {
+			this.stop.set(true);
 			this.printStream.println("quit");
+			this.messageReaderThread.join();
 			this.socket.close();
-		} catch (IOException e) {
+		} catch (IOException | InterruptedException e) {
 		}
 		this.socket = null;
 	}
@@ -251,10 +279,10 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 	}
 
 	@Override
-	public List<ClientInfo> getOnlineClientsExtended(ClientQueryFilter filter) throws Ts3ApiException {
+	public List<ClientInfo> getOnlineClientsExtended(ClientInfoFilter filter) throws Ts3ApiException {
 		List<ClientInfo> resultList = new LinkedList<>();
 		for(SimpleClientInfo sci : this.getOnlineClients()) {
-			ClientInfo info = this.getClientInfo(sci.getClid());
+			ClientInfo info = this.getClientInfo(sci.getClientId());
 			if(filter == null || filter.accept(info))
 				resultList.add(info);
 		}
@@ -265,7 +293,9 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 	public ClientInfo getClientInfo(int clid) throws Ts3ApiException {
 		QueryCommandResult result = this.sendCommandAndCheckResultWithData("clientinfo clid="+clid);
 		try {
-			return DataMappingManager.mapToObject(ClientInfo.class, result.getFirstResultLine(), this);
+			ClientInfo ci = DataMappingManager.mapToObject(ClientInfo.class, result.getFirstResultLine(), this);
+			ci.setClientId(clid);
+			return ci;
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
 			throw new Ts3ApiException(e);
 		}
@@ -274,5 +304,73 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 	@Override
 	public void close() throws Exception {
 		this.disconnect();
+	}
+
+	@Override
+	public List<SimpleClientInfo> getSimpleClientsInChannel(int channelId) throws Ts3ApiException {
+		QueryCommandResult result = this.sendCommandAndCheckResultWithData("clientlist");
+		try {
+			List<SimpleClientInfo> scil = DataMappingManager.mapListToObjectList(SimpleClientInfo.class, result.getFirstResultLine(), this);
+			List<SimpleClientInfo> resList = new LinkedList<>();
+			for(SimpleClientInfo sci : scil) {
+				if(sci.getChannelId() == channelId)
+					resList.add(sci);
+			}
+			return resList;
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
+			throw new Ts3ApiException(e);
+		}
+	}
+
+	@Override
+	public List<ClientInfo> getClientsInChannel(int channelId) throws Ts3ApiException {
+		return this.getClientsInChannel(channelId, null);
+	}
+	
+	@Override
+	public List<ClientInfo> getClientsInChannel(int channelId, ClientInfoFilter filter) throws Ts3ApiException {
+		List<ClientInfo> resultList = new LinkedList<>();
+		for(SimpleClientInfo sci : this.getSimpleClientsInChannel(channelId)) {
+			ClientInfo info = this.getClientInfo(sci.getClientId());
+			if(filter == null || filter.accept(info))
+				resultList.add(info);
+		}
+		return resultList;
+	}
+
+	@Override
+	public ChannelInfo getChannelInfo(int channelId) throws Ts3ApiException {
+		QueryCommandResult result = this.sendCommandAndCheckResultWithData("channelinfo cid="+channelId);
+		try {
+			ChannelInfo ci = DataMappingManager.mapToObject(ChannelInfo.class, result.getFirstResultLine(), this);
+			ci.setChannelId(channelId);
+			return ci;
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
+			throw new Ts3ApiException(e);
+		}
+	}
+
+	@Override
+	public void removeClientFromGroup(int clientDatabaseId, int serverGroupId) throws Ts3ApiException {
+		QueryCommandResult result = this.sendCommand("servergroupdelclient sgid=" + serverGroupId + " cldbid=" + clientDatabaseId);
+		if (result.getId() != 0)
+			throw new Ts3QueryCommandInvalidResultException(result);
+	}
+
+	@Override
+	public void addClientFromGroup(int clientDatabaseId, int serverGroupId) throws Ts3ApiException {
+		QueryCommandResult result = this.sendCommand("servergroupaddclient sgid=" + serverGroupId + " cldbid=" + clientDatabaseId);
+		if (result.getId() != 0)
+			throw new Ts3QueryCommandInvalidResultException(result);
+	}
+
+	@Override
+	public List<ServerGroupClientInfo> getClientServerGroups(int clientDatabaseId) throws Ts3ApiException {
+		QueryCommandResult result = this.sendCommandAndCheckResultWithData("servergroupsbyclientid cldbid="+clientDatabaseId);
+		try {
+			return DataMappingManager.mapListToObjectList(ServerGroupClientInfo.class, result.getFirstResultLine(), this);
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
+			throw new Ts3ApiException(e);
+		}
 	}
 }
