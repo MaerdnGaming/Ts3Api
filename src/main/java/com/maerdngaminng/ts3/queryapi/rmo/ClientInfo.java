@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import com.maerdngaminng.ts3.queryapi.NotEditableObjectException;
 import com.maerdngaminng.ts3.queryapi.Ts3ApiException;
 import com.maerdngaminng.ts3.queryapi.Ts3ApiRMObjectParameter;
 import com.maerdngaminng.ts3.queryapi.Ts3QueryApi;
@@ -110,7 +109,8 @@ public class ClientInfo implements RMObject {
 	@Ts3ApiRMObjectParameter("client_talk_request_msg")
 	private String talkRequestMessage;
 
-	@Ts3ApiRMObjectParameter("client_description")
+	@Setter
+	@Ts3ApiRMObjectParameter(value="client_description",editable=true)
 	private String description;
 	
 	@Ts3ApiRMObjectParameter("client_is_talker")
@@ -196,7 +196,8 @@ public class ClientInfo implements RMObject {
 
 	@Override
 	public void saveChanges() throws Ts3ApiException {
-		throw new NotEditableObjectException();
+		//clientedit clid=10 client_description=Best\sguy\sever!
+		this.getTs3QueryApi().saveChanges(this, "clientedit clid="+this.getClientId());
 	}
 
 	public void setClientId(int clientId) {
