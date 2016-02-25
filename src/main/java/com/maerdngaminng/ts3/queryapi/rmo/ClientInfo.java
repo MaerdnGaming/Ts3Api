@@ -17,7 +17,7 @@ public class ClientInfo implements RMObject {
 	@Setter
 	private Ts3QueryApi ts3QueryApi;
 	
-	private int clientId = -1;
+	private int clientId = -1; 
 	
 	@Ts3ApiRMObjectParameter("cid")
 	private int channelId;
