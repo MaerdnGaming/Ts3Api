@@ -196,7 +196,7 @@ public interface Ts3QueryApi extends AutoCloseable {
 	 * @param serverGroupId the id of the ts3 server group to add
 	 * @throws Ts3ApiException thrown if an exception occurs
 	 */
-	public void addClientFromGroup(int clientDatabaseId, int serverGroupId) throws Ts3ApiException;
+	public void addClientToGroup(int clientDatabaseId, int serverGroupId) throws Ts3ApiException;
 	
 	/**
 	 * Lists basic informations of the server groups for the given client as {@link ServerGroupClientInfo}

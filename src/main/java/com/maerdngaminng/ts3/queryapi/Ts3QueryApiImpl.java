@@ -358,7 +358,7 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 	}
 
 	@Override
-	public void addClientFromGroup(int clientDatabaseId, int serverGroupId) throws Ts3ApiException {
+	public void addClientToGroup(int clientDatabaseId, int serverGroupId) throws Ts3ApiException {
 		QueryCommandResult result = this.sendCommand("servergroupaddclient sgid=" + serverGroupId + " cldbid=" + clientDatabaseId);
 		if (result.getId() != 0)
 			throw new Ts3QueryCommandInvalidResultException(result);
