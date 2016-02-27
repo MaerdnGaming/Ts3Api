@@ -17,6 +17,7 @@ import lombok.Data;
 
 import com.maerdngaminng.ts3.queryapi.filter.ClientInfoFilter;
 import com.maerdngaminng.ts3.queryapi.rmo.ChannelInfo;
+import com.maerdngaminng.ts3.queryapi.rmo.ClientDBInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.ClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.HostinfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.InstanceInfoSnapshot;
@@ -295,6 +296,17 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 		try {
 			ClientInfo ci = DataMappingManager.mapToObject(ClientInfo.class, result.getFirstResultLine(), this);
 			ci.setClientId(clid);
+			return ci;
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
+			throw new Ts3ApiException(e);
+		}
+	}
+	
+	@Override
+	public ClientDBInfo getDbClientInfo(int cldbid) throws Ts3ApiException {
+		QueryCommandResult result = this.sendCommandAndCheckResultWithData("clientdbinfo cldbid="+cldbid);
+		try {
+			ClientDBInfo ci = DataMappingManager.mapToObject(ClientDBInfo.class, result.getFirstResultLine(), this);
 			return ci;
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e) {
 			throw new Ts3ApiException(e);

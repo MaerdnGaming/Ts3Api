@@ -4,13 +4,14 @@ import java.util.List;
 
 import com.maerdngaminng.ts3.queryapi.filter.ClientInfoFilter;
 import com.maerdngaminng.ts3.queryapi.rmo.ChannelInfo;
+import com.maerdngaminng.ts3.queryapi.rmo.ClientDBInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.ClientInfo;
-import com.maerdngaminng.ts3.queryapi.rmo.SimpleClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.HostinfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.InstanceInfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.RMObject;
 import com.maerdngaminng.ts3.queryapi.rmo.ServerGroupClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.ServerVersionInfo;
+import com.maerdngaminng.ts3.queryapi.rmo.SimpleClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.VirtualServerSnapshot;
 
 /**
@@ -134,6 +135,15 @@ public interface Ts3QueryApi extends AutoCloseable {
 	 * @throws Ts3ApiException thrown if an exception occurs
 	 */
 	public ClientInfo getClientInfo(int clientId) throws Ts3ApiException;
+	
+	/**
+	 * Gets a {@link ClientDBInfo} representing the client with the given databaseId
+	 * 
+	 * @param cldbid the databaseId
+	 * @return the {@link ClientDBInfo} for the databaseId
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public ClientDBInfo getDbClientInfo(int cldbid) throws Ts3ApiException;
 	
 	/**
 	 * Writes the changes of an {@link RMObject}-Object to the ts3 server
