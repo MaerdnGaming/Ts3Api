@@ -385,4 +385,11 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 			throw new Ts3ApiException(e);
 		}
 	}
+
+	@Override
+	public void setClientChannelGroup(int clientDatabaseId, int channelGroupId, int channelId) throws Ts3ApiException {
+		QueryCommandResult result = this.sendCommand("setclientchannelgroup cgid="+channelGroupId+" cid="+channelId+" cldbid="+clientDatabaseId);
+		if (result.getId() != 0)
+			throw new Ts3QueryCommandInvalidResultException(result);
+	}
 }

@@ -49,7 +49,7 @@ public interface Ts3QueryApi extends AutoCloseable {
 	 * 
 	 * @throws Ts3ApiConnectException thrown if the connection fails (e.g. server is down)
 	 * @throws Ts3ApiLoginException thrown if the login fails (e.g. wrong credentials)
-	 * @throws Ts3ApiParameterException thrown if a server with the configured id don't exist
+	 * @throws Ts3ApiParameterException thrown if a server with   configured id don't exist
 	 * @throws Ts3ApiException Ts3ApiException thrown if an other exception occurs
 	 */
 	public void reconnect() throws Ts3ApiException;
@@ -207,6 +207,15 @@ public interface Ts3QueryApi extends AutoCloseable {
 	 * @throws Ts3ApiException thrown if an exception occurs
 	 */
 	public void addClientToGroup(int clientDatabaseId, int serverGroupId) throws Ts3ApiException;
+	
+	/**
+	 * Sets a channel group to a client
+	 * 
+	 * @param clientDatabaseId the database id of the client to add the group
+	 * @param serverGroupId the id of the ts3 server group to add
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public void setClientChannelGroup(int clientDatabaseId, int channelGroupId, int channelId) throws Ts3ApiException;
 	
 	/**
 	 * Lists basic informations of the server groups for the given client as {@link ServerGroupClientInfo}
