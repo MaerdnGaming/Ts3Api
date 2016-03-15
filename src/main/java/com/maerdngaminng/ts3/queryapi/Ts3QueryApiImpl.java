@@ -8,7 +8,10 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,8 +20,10 @@ import lombok.Data;
 
 import com.maerdngaminng.ts3.queryapi.filter.ClientInfoFilter;
 import com.maerdngaminng.ts3.queryapi.rmo.ChannelInfo;
+import com.maerdngaminng.ts3.queryapi.rmo.ChannelPermission;
 import com.maerdngaminng.ts3.queryapi.rmo.ClientDBInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.ClientInfo;
+import com.maerdngaminng.ts3.queryapi.rmo.CreateChannelProperty;
 import com.maerdngaminng.ts3.queryapi.rmo.HostinfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.InstanceInfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.RMObject;
@@ -27,6 +32,7 @@ import com.maerdngaminng.ts3.queryapi.rmo.ServerVersionInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.SimpleClientInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.VirtualServerSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.mapper.DataMappingManager;
+import com.maerdngaminng.ts3.queryapi.rmo.result.CreateChannelResult;
 
 @Data
 public class Ts3QueryApiImpl implements Ts3QueryApi {
@@ -134,7 +140,7 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 		messageReaderThread.start();
 	}
 
-	protected String buildCommandString(RMObject newObj, String command) throws Ts3ApiException {
+	protected String buildCommandString(RMObject newObj) throws Ts3ApiException {
 		StringBuilder execStringBuilder = new StringBuilder();
 		try {
 			for (Field f : newObj.getClass().getDeclaredFields()) {
@@ -152,7 +158,7 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 					execStringBuilder.append(ts3ApiRMOParameter.value() + "=" + this.escapeString(newData.toString()));
 				}
 			}
-			return command + execStringBuilder.toString();
+			return execStringBuilder.length() > 0 ? execStringBuilder.substring(1) : "";
 		} catch (IllegalArgumentException | IllegalAccessException e) {
 			throw new Ts3ApiException(e);
 		}
@@ -264,7 +270,7 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 
 	@Override
 	public void saveChanges(RMObject newObj, String command) throws Ts3ApiException {
-		QueryCommandResult result = this.sendCommand(this.buildCommandString(newObj, command));
+		QueryCommandResult result = this.sendCommand(command+" "+this.buildCommandString(newObj));
 		if (result.getId() != 0)
 			throw new Ts3QueryCommandInvalidResultException(result);
 	}
@@ -389,6 +395,39 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 	@Override
 	public void setClientChannelGroup(int clientDatabaseId, int channelGroupId, int channelId) throws Ts3ApiException {
 		QueryCommandResult result = this.sendCommand("setclientchannelgroup cgid="+channelGroupId+" cid="+channelId+" cldbid="+clientDatabaseId);
+		if (result.getId() != 0)
+			throw new Ts3QueryCommandInvalidResultException(result);
+	}
+
+	@Override
+	public int createChannel(String name, Map<CreateChannelProperty, String> properties) throws Ts3ApiException {
+		StringBuilder propStr = new StringBuilder();
+		for(Entry<CreateChannelProperty, String> e : properties.entrySet()) {
+			propStr.append(' ');
+			propStr.append(e.getKey().name().toLowerCase());
+			propStr.append('=');
+			propStr.append(this.escapeString(e.getValue()));
+		}
+		QueryCommandResult result = this.sendCommand("channelcreate channel_name="+name+propStr.toString());
+		if (result.getId() != 0)
+			throw new Ts3QueryCommandInvalidResultException(result);
+		try {
+			CreateChannelResult ci = DataMappingManager.mapToObject(CreateChannelResult.class, result.getFirstResultLine(), this);
+			return ci.getChannelId();
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException e1) {
+			throw new Ts3ApiConnectException(e1);
+		}
+	}
+
+	@Override
+	public void channelAddPermission(int channelId, Set<ChannelPermission> permissions) throws Ts3ApiException {
+		StringBuilder permStr = new StringBuilder();
+		for(ChannelPermission perm : permissions) {
+			permStr.append('|');
+			permStr.append(this.buildCommandString(perm));
+		}
+		if(permStr.length() <= 1) return;
+		QueryCommandResult result = this.sendCommand("channeladdperm cid="+channelId+" "+permStr.substring(1));
 		if (result.getId() != 0)
 			throw new Ts3QueryCommandInvalidResultException(result);
 	}

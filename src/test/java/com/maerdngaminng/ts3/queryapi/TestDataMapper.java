@@ -145,10 +145,10 @@ public class TestDataMapper {
 				"maxUploadBandwith=18446744073709551615, guestServerQueryGroup=255, serverQueryFloodCommands=50, serverQueryFloodTime=3, serverQueryBanTime=600, templateServerAdminGroup=3, "+
 				"templateServerDefaultGroup=5, templateChannelAdminGroup=1, templateChannelDefaultGroup=4, serverPermissionsVersion=19, serverPendungConnectionsPerIp=0)");
 		
-		String line = ((Ts3QueryApiImpl) getApi()).buildCommandString(insSnap, "instanceedit");
+		String line = ((Ts3QueryApiImpl) getApi()).buildCommandString(insSnap);
 		System.out.println(line);
 		
-		assertEquals(line, "instanceedit serverinstance_max_download_total_bandwidth=18446744073709551615 serverinstance_max_upload_total_bandwidth=18446744073709551615 "+
+		assertEquals(line, "serverinstance_max_download_total_bandwidth=18446744073709551615 serverinstance_max_upload_total_bandwidth=18446744073709551615 "+
 							"serverinstance_guest_serverquery_group=255");
 	}
 }

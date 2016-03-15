@@ -1,11 +1,15 @@
 package com.maerdngaminng.ts3.queryapi;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.maerdngaminng.ts3.queryapi.filter.ClientInfoFilter;
 import com.maerdngaminng.ts3.queryapi.rmo.ChannelInfo;
+import com.maerdngaminng.ts3.queryapi.rmo.ChannelPermission;
 import com.maerdngaminng.ts3.queryapi.rmo.ClientDBInfo;
 import com.maerdngaminng.ts3.queryapi.rmo.ClientInfo;
+import com.maerdngaminng.ts3.queryapi.rmo.CreateChannelProperty;
 import com.maerdngaminng.ts3.queryapi.rmo.HostinfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.InstanceInfoSnapshot;
 import com.maerdngaminng.ts3.queryapi.rmo.RMObject;
@@ -225,4 +229,23 @@ public interface Ts3QueryApi extends AutoCloseable {
 	 * @throws Ts3ApiException thrown if an exception occurs
 	 */
 	public List<ServerGroupClientInfo> getClientServerGroups(int clientDatabaseId) throws Ts3ApiException;
+	
+	/**
+	 * Creates a new Channel and returns the channel id
+	 * 
+	 * @param name the name of the channel
+	 * @param properties the configuration of the channel
+	 * @return the if of the new channel
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public int createChannel(String name, Map<CreateChannelProperty, String> properties) throws Ts3ApiException;
+	
+	/**
+	 * Adds the given permissions to the given channel
+	 * 
+	 * @param channelId the id of the channel
+	 * @param permissions a set of permissions to add
+	 * @throws Ts3ApiException thrown if an exception occurs
+	 */
+	public void channelAddPermission(int channelId, Set<ChannelPermission> permissions) throws Ts3ApiException;
 }
