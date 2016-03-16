@@ -17,6 +17,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import lombok.Data;
+import lombok.Getter;
 
 import com.maerdngaminng.ts3.queryapi.filter.ClientInfoFilter;
 import com.maerdngaminng.ts3.queryapi.rmo.ChannelInfo;
@@ -44,6 +45,8 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 	private AtomicBoolean stop = new AtomicBoolean(false);
 	private PrintStream printStream = null;
 	private BlockingQueue<QueryMessage> resultMessageQueue = new LinkedBlockingQueue<>();
+
+	private boolean debug;
 
 	protected Ts3QueryApiImpl(Ts3ConnectionInfo ts3ConnectionInfo) {
 		this.ts3ConnectionInfo = ts3ConnectionInfo;
@@ -98,6 +101,7 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 	private QueryCommandResult sendCommand(String command) throws Ts3ApiException {
 		if (!this.isAllAvalible())
 			throw new Ts3ApiException("Connection is not available");
+		this.debug("Send Command: "+command);
 		this.printStream.println(command);
 		String result;
 		int id = 0;
@@ -107,6 +111,7 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 		try {
 			QueryMessage qmsg = this.resultMessageQueue.take();
 			result = qmsg.getMainMessage().substring(6);
+			this.debug("Read Command result: "+result);
 			String[] c = result.split(" ");
 			for (String x : c) {
 				if (x.startsWith("id")) {
@@ -124,6 +129,11 @@ public class Ts3QueryApiImpl implements Ts3QueryApi {
 		} catch (InterruptedException e) {
 			throw new Ts3ApiException(e);
 		}
+	}
+
+	private void debug(String string) {
+		if(this.debug)
+			System.out.println("[Ts3Api] "+string);
 	}
 
 	private boolean login() throws Ts3ApiException {

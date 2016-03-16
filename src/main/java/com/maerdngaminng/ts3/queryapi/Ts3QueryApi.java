@@ -49,6 +49,18 @@ public interface Ts3QueryApi extends AutoCloseable {
 	public void disconnect();
 	
 	/**
+	 * Enabled the debug mode
+	 * @param enabled true if enabled
+	 */
+	public void setDebug(boolean enabled);
+	
+	/**
+	 * Returns the current debug state
+	 * @return true if debug is enabled
+	 */
+	public boolean isDebug();
+	
+	/**
 	 * Closes the connection to the Ts3 server and establishes a connection to the query port of the Ts3 server.
 	 * 
 	 * @throws Ts3ApiConnectException thrown if the connection fails (e.g. server is down)
