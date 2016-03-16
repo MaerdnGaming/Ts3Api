@@ -26,16 +26,16 @@ public class ChannelPermission implements RMObject {
 	@Setter
 	private Ts3QueryApi ts3QueryApi;
 	
-	@Ts3ApiRMObjectParameter("permid")
+	@Ts3ApiRMObjectParameter(editable=true,value="permid")
 	private int permissionId;
 	
-	@Ts3ApiRMObjectParameter("permvalue")
+	@Ts3ApiRMObjectParameter(editable=true,value="permvalue")
 	private String permissionValue;
 	
-	@Ts3ApiRMObjectParameter("permnegated")
+	@Ts3ApiRMObjectParameter(editable=true,value="permnegated")
 	private boolean negate;
 	
-	@Ts3ApiRMObjectParameter("permskip")
+	@Ts3ApiRMObjectParameter(editable=true,value="permskip")
 	private boolean skip;
 
 	@Override
