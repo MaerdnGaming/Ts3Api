@@ -14,6 +14,14 @@ import lombok.ToString;
 @EqualsAndHashCode(exclude={"ts3QueryApi"})
 @ToString(exclude={"ts3QueryApi"})
 public class ChannelPermission implements RMObject {
+	
+	public ChannelPermission(int permissionId, String permissionValue, boolean negate, boolean skip) {
+		super();
+		this.permissionId = permissionId;
+		this.permissionValue = permissionValue;
+		this.negate = negate;
+		this.skip = skip;
+	}
 
 	@Setter
 	private Ts3QueryApi ts3QueryApi;
